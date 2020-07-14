@@ -148,6 +148,35 @@ Promise.prototype.then = function(onResolved, onRejected) {
 Promise.prototype.catch = function(onRejected) {
   return this.then(null, onRejected)
 }
+
+Promise.resolve = function(value) {
+  // 参数是一个 Promise 实例
+  if(value && value instanceof Promise) {
+    return value;
+  }
+  // 参数是一个thenable对象
+  if(value && typeof value === 'object') {
+    const then = value.then;
+    if(typeof then === 'function') {
+      return new Promise(resolve => then(resolve));
+    }
+  }
+  // 参数不是具有then方法的对象，或根本就不是对象
+  return new Promise(resolve => resolve(value));
+}
+
+// Promise.reject()方法的参数，会原封不动地作为reject的理由，变成后续方法的参数
+Promise.reject = function(reason) {
+  return new Promise((_, reject) => reject(reason));
+}
+
+Promise.prototype.finally = function(callback) {
+  return this.then(
+    value => Promise.resolve(callback()).then(() => value),
+    reason => Promise.resolve(callback()).then(() => {throw reason})
+  );
+}
+
 // 使用promises-aplus-tests时打开注释
 // Promise.deferred = Promise.defer = function() {
 //   var dfd = {}
