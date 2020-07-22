@@ -158,7 +158,7 @@ Promise.resolve = function(value) {
   if(value && typeof value === 'object') {
     const then = value.then;
     if(typeof then === 'function') {
-      return new Promise(resolve => then(resolve));
+      return new Promise(resolve => then.call(value, resolve));
     }
   }
   // 参数不是具有then方法的对象，或根本就不是对象
@@ -175,6 +175,47 @@ Promise.prototype.finally = function(callback) {
     value => Promise.resolve(callback()).then(() => value),
     reason => Promise.resolve(callback()).then(() => {throw reason})
   );
+}
+
+Promise.all = function(promises) {
+  return new Promise((resolve, reject) => {
+    if(!Array.isArray(promises)) {
+      return reject(new TypeError('Promise.all accepts an array'));
+    }
+    let remaining = promises.length;
+    if(remaining === 0) {
+      return resolve([]);
+    }
+    const result = [];
+    function handlePromise(i, val) {
+      try{
+        if((val !== null) && ((typeof val === 'object') || (typeof val === 'function'))) {
+          const then = val.then;
+          if(typeof then === 'function') {
+            then.call(
+              val, 
+              function (value) {
+                handlePromise(i, value);
+              }, 
+              reject
+            );
+            return;
+          }
+        }
+        result[i] = val;
+        if(--remaining === 0) {
+          resolve(result);
+        }
+      } catch(e) {
+        reject(e);
+      }
+    }
+
+    let index = 0;
+    for(promise of promises) {
+      handlePromise(index++, promise);
+    }
+  });
 }
 
 // 使用promises-aplus-tests时打开注释
