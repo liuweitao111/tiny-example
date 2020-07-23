@@ -218,6 +218,24 @@ Promise.all = function(promises) {
   });
 }
 
+Promise.race = function(promises) {
+  return new Promise((resolve, reject) => {
+    if(!Array.isArray(promises)) {
+      return reject(new TypeError('Promise.race accepts an array'));
+    }
+    for(let i = 0; i < promises.length; i++) {
+      Promise.resolve(promises[i]).then(resolve, reject);
+    }
+  });
+}
+
+Promise.allSettled = function(promises) {
+  return Promise.all(promises.map(promise => 
+    promise.then(value => ({status: 'fulfilled', value}))
+      .catch(reason => ({status: 'rejected', value: reason}))
+  ));
+}
+
 // 使用promises-aplus-tests时打开注释
 // Promise.deferred = Promise.defer = function() {
 //   var dfd = {}
